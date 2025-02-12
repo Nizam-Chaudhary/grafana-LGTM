@@ -1,3 +1,10 @@
+configs:
+  tempo_config:
+    file: ./tempo-config.yaml
+
+  prometheus_config:
+    file: ./prometheus.yml
+
 services:
   grafana:
     image: grafana/grafana:10.1.5
@@ -40,14 +47,14 @@ services:
 
   tempo:
     image: grafana/tempo:2.2.0
-    container_name: tempo
-    ports:
-      - "14268:14268" # Jaeger endpoint
-      - "3200:3200" # Tempo UI
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-    volumes:
-      - ./tempo-config.yaml:/etc/tempo.yaml
+    # ports:
+    #   - "14268:14268" # Jaeger endpoint
+    #   - "3200:3200" # Tempo UI
+    #   - "4317:4317" # OTLP gRPC
+    #   - "4318:4318" # OTLP HTTP
+    configs:
+      - source: tempo_config
+        target: /etc/tempo.yaml
     command: ["-config.file=/etc/tempo.yaml"]
     deploy:
       update_config:
@@ -57,11 +64,11 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.47.0
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    # ports:
+    #   - "9090:9090"
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
     depends_on:
       - tempo
     deploy:
