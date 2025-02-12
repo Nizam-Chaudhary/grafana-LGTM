@@ -23,7 +23,7 @@ jobs:
           # Check if the secret already exists
           if ! docker secret ls --filter name=grafana_password -q; then
             echo "Secret does not exist. Creating Docker secret..."
-            echo "$${{ secrets.GRAFAN_ADMIN_PASSWORD }}" | docker secret create grafana_password -
+            echo "$${{ secrets.GRAFANA_ADMIN_PASSWORD }}" | docker secret create grafana_password -
           else
             echo "Secret already exists."
           fi
