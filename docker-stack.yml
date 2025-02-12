@@ -1,0 +1,82 @@
+services:
+  grafana:
+    image: grafana/grafana:10.1.5
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
+    secrets:
+      - grafana_password
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=Nizam6353
+      - GF_AUTH_ANONYMOUS_ORG_NAME=passman
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      # - GF_SECURITY_ADMIN_USER_FILE=/run/secret/grafana_username
+      - GF_SECURITY_ADMIN_PASSWORD_FILE=/run/secret/grafana_password
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.http.routers.grafana.rule=Host(`observe.passman.live`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    deploy:
+      update_config:
+        order: start-first
+    networks:
+      - web
+
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/local-config.yaml
+    deploy:
+      update_config:
+        order: start-first
+    networks:
+      - web
+
+  tempo:
+    image: grafana/tempo:2.2.0
+    container_name: tempo
+    ports:
+      - "14268:14268" # Jaeger endpoint
+      - "3200:3200" # Tempo UI
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    volumes:
+      - ./tempo-config.yaml:/etc/tempo.yaml
+    command: ["-config.file=/etc/tempo.yaml"]
+    deploy:
+      update_config:
+        order: start-first
+    networks:
+      - web
+
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - tempo
+    deploy:
+      update_config:
+        order: start-first
+    networks:
+      - web
+
+volumes:
+  grafana-data:
+
+networks:
+  web:
+    external: true
+
+secrets:
+  grafana_password:
+    external: true

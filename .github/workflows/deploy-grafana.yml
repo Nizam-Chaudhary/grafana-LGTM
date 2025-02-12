@@ -1,0 +1,33 @@
+name: Deploy Grafana LGTM stack
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+
+      - name: Create Docker context and set in use
+        run: |
+          ssh-keyscan -H passman.live >> ~/.ssh/known_hosts
+          docker context create passman --docker "host=ssh://ubuntu@passman.live"
+          docker context use passman
+          # Check if the secret already exists
+          if ! docker secret ls --filter name=grafana_password -q; then
+            echo "Secret does not exist. Creating Docker secret..."
+            echo "$${{ secrets.GRAFAN_ADMIN_PASSWORD }}" | docker secret create grafana_password -
+          else
+            echo "Secret already exists."
+          fi
+
+      - name: Docker stack deploy
+        run: |
+          docker stack config -c docker-stack.yml | docker stack deploy -c - grafana -d --with-registry-auth
