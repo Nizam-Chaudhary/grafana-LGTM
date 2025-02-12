@@ -5,6 +5,9 @@ configs:
   prometheus_config:
     file: ./prometheus.yml
 
+  otel_config:
+    file: ./otel-collector-config.yaml
+
 services:
   grafana:
     image: grafana/grafana:10.1.5
@@ -33,6 +36,22 @@ services:
     deploy:
       update_config:
         order: start-first
+    networks:
+      - web
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    configs:
+      - source: otel_config
+        target: /etc/otel-collector-config.yaml
+    deploy:
+      update_config:
+        order: start-first
+    # ports:
+    #   - "4317:4317" # OTLP gRPC
+    #   - "4318:4318" # OTLP HTTP
+    #   - "9464:9464" # Prometheus Metrics Export
     networks:
       - web
 

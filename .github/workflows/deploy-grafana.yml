@@ -28,6 +28,11 @@ jobs:
             echo "Secret already exists."
           fi
 
+          # remove configs first
+          docker config rm grafana_otel_config
+          docker config rm grafana_prometheus_config
+          docker config rm grafana_tempo_config
+
       - name: Docker stack deploy
         run: |
           docker stack config -c docker-stack.yml | docker stack deploy -c - grafana -d --with-registry-auth

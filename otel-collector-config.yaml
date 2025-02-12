@@ -1,0 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+
+processors:
+  batch:
+
+exporters:
+  otlp:
+    endpoint: "http://tempo:4317" # Send traces to Tempo (OTLP gRPC)
+  prometheus:
+    endpoint: "0.0.0.0:9464" # OpenTelemetry Collector exposes this for Prometheus
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp] # Send traces to Tempo
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus] # Expose Prometheus metrics
