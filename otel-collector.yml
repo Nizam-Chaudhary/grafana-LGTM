@@ -1,0 +1,45 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317" # Change from localhost to 0.0.0.0
+      http:
+        endpoint: "0.0.0.0:4318" # Change from localhost to 0.0.0.0
+
+  # prometheus:
+  #   config:
+  #     scrape_configs:
+  #       - job_name: "passman"
+  #         scrape_interval: 5s
+  #         static_configs:
+  #           - targets: ["passman-be:3000"]
+
+processors:
+  batch:
+
+exporters:
+  otlp:
+    endpoint: tempo:4317 # Send traces to Tempo
+    tls:
+      insecure: true
+
+  prometheus:
+    endpoint: "0.0.0.0:9464" # Expose Prometheus metrics
+
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push # Send logs to Loki
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [loki]

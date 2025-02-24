@@ -1,0 +1,32 @@
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 4317 # Tempo listens on this port for OTLP gRPC traces
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+        http:
+
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  trace_idle_period: 10s
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 24h # Keep traces for 24 hours
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo # Store traces locally (use an external backend for production)
+
+overrides:
+  metrics_generator_processors: [service-graphs, span-metrics]
