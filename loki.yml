@@ -4,11 +4,11 @@ server:
   http_listen_port: 3100
 
 common:
-  path_prefix: /var/loki
+  path_prefix: /loki
   storage:
     filesystem:
-      chunks_directory: /var/loki/chunks
-      rules_directory: /var/loki/rules
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
   replication_factor: 1
   ring:
     kvstore:
@@ -24,12 +24,31 @@ schema_config:
         prefix: index_
         period: 24h
 
-# ruler:
-#   alertmanager_url: http://localhost:9093
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/cache
+    cache_ttl: 24h
+    shared_store: filesystem
+  filesystem:
+    directory: /loki/chunks
 
-# Increase the retention period for longer log storage
 limits_config:
-  retention_period: 120h # 5 days
+  retention_period: 168h # 7 days retention
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  max_cache_freshness_per_query: 10m
+  ingestion_rate_mb: 64
+  ingestion_burst_size_mb: 128
 
-analytics:
-  reporting_enabled: false
+chunk_store_config:
+  max_look_back_period: 0s
+
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 168h
+
+compactor:
+  working_directory: /loki/compactor
+  shared_store: filesystem
