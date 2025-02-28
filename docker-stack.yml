@@ -1,20 +1,29 @@
 configs:
   tempo_config:
-    file: ./tempo-config.yaml
+    file: ./tempo.yaml
 
   prometheus_config:
     file: ./prometheus.yml
 
   otel_config:
-    file: ./otel-collector-config.yaml
+    file: ./otel-collector.yml
+
+  loki_config:
+    file: ./loki.yml
 
 services:
+  init:
+    image: &tempoImage grafana/tempo:latest
+    user: root
+    entrypoint:
+      - "chown"
+      - "10001:10001"
+      - "/var/tempo"
+    volumes:
+      - tempo-storage:/var/tempo
+
   grafana:
-    image: grafana/grafana:10.1.5
-    depends_on:
-      - loki
-      - tempo
-      - prometheus
+    image: grafana/grafana:11.5.2
     secrets:
       - grafana_password
     environment:
@@ -40,51 +49,52 @@ services:
       - web
 
   otel-collector:
-    image: otel/opentelemetry-collector:latest
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector.yml"]
     configs:
       - source: otel_config
-        target: /etc/otel-collector-config.yaml
+        target: /etc/otel-collector.yml
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
     deploy:
       update_config:
         order: start-first
-    # ports:
-    #   - "4317:4317" # OTLP gRPC
-    #   - "4318:4318" # OTLP HTTP
-    #   - "9464:9464" # Prometheus Metrics Export
     networks:
       - web
 
   loki:
-    image: grafana/loki:latest
-    command: -config.file=/etc/loki/local-config.yaml
+    image: grafana/loki:3.4
     deploy:
       update_config:
         order: start-first
+    configs:
+      - source: loki_config
+        target: /etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/var/loki
     networks:
       - web
 
   tempo:
-    image: grafana/tempo:2.2.0
-    # ports:
-    #   - "14268:14268" # Jaeger endpoint
-    #   - "3200:3200" # Tempo UI
-    #   - "4317:4317" # OTLP gRPC
-    #   - "4318:4318" # OTLP HTTP
+    image: *tempoImage
     configs:
       - source: tempo_config
         target: /etc/tempo.yaml
+    volumes:
+      - tempo-data:/var/tempo/traces # Persistent storage
     command: ["-config.file=/etc/tempo.yaml"]
-    deploy:
-      update_config:
-        order: start-first
+    depends_on:
+      - init
     networks:
       - web
 
   prometheus:
     image: prom/prometheus:v2.47.0
-    # ports:
-    #   - "9090:9090"
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - prometheus-data:/prometheus
     configs:
       - source: prometheus_config
         target: /etc/prometheus/prometheus.yml
@@ -98,6 +108,9 @@ services:
 
 volumes:
   grafana-data:
+  tempo-data:
+  prometheus-data:
+  loki-data:
 
 networks:
   web:

@@ -16,6 +16,11 @@ receivers:
 
 processors:
   batch:
+  # transform:
+  #   log_statements:
+  #     - context: log
+  #       statements:
+  #         - set(body, ParseJSONOrDefault(body, body))
 
 exporters:
   otlp:

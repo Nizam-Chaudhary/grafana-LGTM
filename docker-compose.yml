@@ -1,4 +1,14 @@
 services:
+  init:
+    image: &tempoImage grafana/tempo:latest
+    user: root
+    entrypoint:
+      - "chown"
+      - "10001:10001"
+      - "/var/tempo"
+    volumes:
+      - tempo-storage:/var/tempo
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib
     container_name: otel-collector
@@ -9,14 +19,40 @@ services:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
       - "9464:9464" # Prometheus metrics
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
     networks:
       - monitoring
 
+  # alloy:
+  #   image: grafana/alloy:latest
+  #   container_name: alloy
+  #   command:
+  #     [
+  #       "run",
+  #       "--server.http.listen-addr=0.0.0.0:12345",
+  #       "--storage.path=/var/lib/alloy/data",
+  #       "/etc/alloy/config.alloy",
+  #     ]
+  #   volumes:
+  #     - ./config.alloy:/etc/alloy/config.alloy
+  #     - alloy-data:/var/lib/alloy/data # Added persistent storage
+  #   ports:
+  #     - "12345:12345"
+  #     - "4317:4317" # OTLP gRPC
+  #     - "4318:4318" # OTLP HTTP
+  #     - "9464:9464" # Prometheus metrics
+  #   networks:
+  #     - monitoring
+
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:3.4
     container_name: loki
-    depends_on:
-      - otel-collector
+    volumes:
+      - ./loki.yml:/etc/loki/loki-config.yml
+      - loki-data:/var/loki
     networks:
       - monitoring
 
@@ -26,24 +62,45 @@ services:
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    depends_on:
-      - otel-collector
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
     networks:
       - monitoring
 
-  # tempo:
-  #   image: grafana/tempo
-  #   container_name: tempo
-  #   command: ["-config.file=/etc/tempo.yml"]
+  # mimir:
+  #   image: grafana/mimir:latest
+  #   container_name: mimir
   #   volumes:
-  #     - ./tempo.yml:/etc/tempo.yml
-  #   depends_on:
-  #     - otel-collector
+  #     - ./mimir.yml:/etc/mimir/config.yaml
+  #     - mimir-data:/var/mimir/data
+  #     - mimir-wal:/var/mimir/wal
+  #   command:
+  #     - "-config.file=/etc/mimir/config.yaml"
+  #   ports:
+  #     - "9009:9009" # Mimir API
   #   networks:
   #     - monitoring
 
+  tempo:
+    image: *tempoImage
+    container_name: tempo
+    ports:
+      - "3200:3200" # Tempo HTTP endpoint
+      # - "4317:4317" # OTLP gRPC endpoint
+    #   - "9090:9090" # Metrics endpoint
+    #   - "9091:9091" # Health check endpoint
+    volumes:
+      - ./tempo.yml:/etc/tempo.yaml # Mount the config file
+      - tempo-data:/var/tempo/traces # Persistent storage
+    command: ["-config.file=/etc/tempo.yaml"]
+    depends_on:
+      - init
+    networks:
+      - monitoring
+
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:11.5.2
     container_name: grafana
     environment:
       - GF_AUTH_ANONYMOUS_ORG_NAME=passman
@@ -58,6 +115,12 @@ services:
 
 volumes:
   grafana-data:
+  # alloy-data:
+  # mimir-data:
+  # mimir-wal:
+  tempo-data:
+  prometheus-data:
+  loki-data:
 
 networks:
   monitoring:

@@ -1,8 +1,8 @@
 global:
-  scrape_interval: 5s # Adjust as needed
+  scrape_interval: 15s
 
+# Instead of storing metrics, Prometheus reads them from Mimir
 scrape_configs:
-  # Scrape metrics from the OpenTelemetry Collector
-  - job_name: "otel-collector"
+  - job_name: "otel"
     static_configs:
-      - targets: ["otel-collector:9464"] # Collects metrics from OTel Collector
+      - targets: ["otel-collector:9464"]
