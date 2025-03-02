@@ -1,0 +1,28 @@
+configs:
+  alloy_config:
+    file: ./prod.config.alloy
+
+services:
+  alloy:
+    image: grafana/alloy:latest
+    command:
+      [
+        "run",
+        # "--server.http.listen-addr=0.0.0.0:12345",
+        "--storage.path=/var/lib/alloy/data",
+        "/etc/alloy/config.alloy",
+      ]
+    configs:
+      - source: alloy_config
+        target: /etc/alloy/config.alloy
+    volumes:
+      - alloy-data:/var/lib/alloy/data
+    networks:
+      - web
+
+volumes:
+  alloy-data:
+
+networks:
+  web:
+    external: true

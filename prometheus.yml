@@ -1,7 +1,6 @@
 global:
   scrape_interval: 15s
 
-# Instead of storing metrics, Prometheus reads them from Mimir
 scrape_configs:
   - job_name: "otel"
     static_configs:

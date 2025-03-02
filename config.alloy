@@ -3,28 +3,50 @@ livedebugging {
   enabled = true
 }
 
-// receive open telemetry data
 otelcol.receiver.otlp "default" {
-  grpc {}
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
 
   output {
-    metrics = [otelcol.exporter.prometheus.default.input]
-    logs = [otelcol.exporter.loki.default.input]
-    //traces  = [...]
+    metrics = [otelcol.processor.batch.default.input]
+    logs = [otelcol.processor.batch.default.input]
+    traces = [otelcol.processor.batch.default.input]
   }
 }
 
-// receive open telemetry loki logs and forward them to loki
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+    logs = [otelcol.exporter.loki.default.input]
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
 otelcol.exporter.loki "default" {
   forward_to = [loki.write.default.receiver]
 }
 
-// push logs to loki
 loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
   }
 }
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure             = true
+      insecure_skip_verify = true
+    }
+  }
+}
+
 
 // receive open telemetry prometheus metrics and forward them to prometheus
 otelcol.exporter.prometheus "default" {

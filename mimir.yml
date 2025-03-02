@@ -1,44 +1,40 @@
-# Do not use this configuration in production.
-# It is for demonstration purposes only.
 multitenancy_enabled: false
+# basic_auth:
+#   username: mimir
+#   password_file: mimir
 
-blocks_storage:
-  backend: filesystem
-  bucket_store:
-    sync_dir: /tmp/mimir/tsdb-sync
-  filesystem:
-    dir: /tmp/mimir/data/tsdb
-  tsdb:
-    dir: /tmp/mimir/tsdb
-
-compactor:
-  data_dir: /tmp/mimir/compactor
-  sharding_ring:
-    kvstore:
-      store: memberlist
-
-distributor:
-  ring:
-    instance_addr: 127.0.0.1
-    kvstore:
-      store: memberlist
-
-ingester:
-  ring:
-    instance_addr: 127.0.0.1
-    kvstore:
-      store: memberlist
-    replication_factor: 1
-
-ruler_storage:
-  backend: filesystem
-  filesystem:
-    dir: /tmp/mimir/rules
 
 server:
   http_listen_port: 9009
-  log_level: error
 
-store_gateway:
-  sharding_ring:
-    replication_factor: 1
+# distributor:
+#   ring:
+#     kvstore:
+#       store: inmemory
+
+deployment_type: 'baremetal'
+
+# ingester:
+#   ring:
+#     kvstore:
+#       store: inmemory
+#   lifecycler:
+#     ring:
+#       replication_factor: 1
+
+# store_gateway:
+#   sharding_enabled: false
+#   replication_factor: 1
+
+# compactor:
+  # sharding_enabled: false
+
+# limits:
+  # max_global_series_per_user: 1000000
+  # max_series_per_query: 100000
+  # max_samples_per_query: 50000000
+
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/mimir

@@ -23,8 +23,6 @@ services:
       - tempo
       - loki
       - prometheus
-    networks:
-      - monitoring
 
   # alloy:
   #   image: grafana/alloy:latest
@@ -43,7 +41,7 @@ services:
   #     - "12345:12345"
   #     - "4317:4317" # OTLP gRPC
   #     - "4318:4318" # OTLP HTTP
-  #     - "9464:9464" # Prometheus metrics
+  #     # - "9464:9464" # Prometheus metrics
   #   networks:
   #     - monitoring
 
@@ -53,8 +51,6 @@ services:
     volumes:
       - ./loki.yml:/etc/loki/loki-config.yml
       - loki-data:/var/loki
-    networks:
-      - monitoring
 
   prometheus:
     image: prom/prometheus
@@ -65,29 +61,26 @@ services:
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
-    networks:
-      - monitoring
 
   # mimir:
   #   image: grafana/mimir:latest
   #   container_name: mimir
-  #   volumes:
-  #     - ./mimir.yml:/etc/mimir/config.yaml
-  #     - mimir-data:/var/mimir/data
-  #     - mimir-wal:/var/mimir/wal
-  #   command:
-  #     - "-config.file=/etc/mimir/config.yaml"
   #   ports:
-  #     - "9009:9009" # Mimir API
+  #     - "9009:9009"
+  #   volumes:
+  #     - ./mimir.yml:/etc/mimir/mimir.yaml
+  #     - mimir-data:/data/mimir
+  #   command:
+  #     - "-config.file=/etc/mimir/mimir.yaml"
   #   networks:
   #     - monitoring
-
+  
   tempo:
     image: *tempoImage
     container_name: tempo
     ports:
       - "3200:3200" # Tempo HTTP endpoint
-      # - "4317:4317" # OTLP gRPC endpoint
+    # - "4317:4317" # OTLP gRPC endpoint
     #   - "9090:9090" # Metrics endpoint
     #   - "9091:9091" # Health check endpoint
     volumes:
@@ -96,11 +89,15 @@ services:
     command: ["-config.file=/etc/tempo.yaml"]
     depends_on:
       - init
-    networks:
-      - monitoring
+
+  # jaeger: 
+  #   image: jaegertracing/jaeger
+  #   container_name: jaeger
+  #   ports: 
+  #     - "16686:16686"
 
   grafana:
-    image: grafana/grafana:11.5.2
+    image: grafana/grafana:latest
     container_name: grafana
     environment:
       - GF_AUTH_ANONYMOUS_ORG_NAME=passman
@@ -110,18 +107,13 @@ services:
       - grafana-data:/var/lib/grafana
     ports:
       - "4000:3000"
-    networks:
-      - monitoring
 
 volumes:
   grafana-data:
+  otel-collector-data:
   # alloy-data:
   # mimir-data:
   # mimir-wal:
   tempo-data:
   prometheus-data:
   loki-data:
-
-networks:
-  monitoring:
-    external: true
