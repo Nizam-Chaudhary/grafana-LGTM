@@ -74,7 +74,7 @@ services:
   #     - "-config.file=/etc/mimir/mimir.yaml"
   #   networks:
   #     - monitoring
-  
+
   tempo:
     image: *tempoImage
     container_name: tempo
